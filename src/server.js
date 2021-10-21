@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import listEndpoints from "express-list-endpoints";
+import { join } from "path";
 
-import authorsRouter from "./Books-API/Authors/index.js";
-import blogPostsRouter from "./Books-API/Blog/index.js";
+import authorsRouter from "./services/Authors/index.js";
+import blogPostsRouter from "./services/Posts/index.js";
 
 import {
   genericErrorHandler,
@@ -11,6 +12,8 @@ import {
   unauthorizedHandler,
   notFoundHandler,
 } from "./errorHandlers.js";
+
+import { getPosts, writePosts } from "./lib/fs-tools.js";
 
 const server = express();
 
@@ -27,6 +30,9 @@ server.use(cors());
 server.use(express.json());
 
 // ************************ ENDPOINTS **********************
+const staticFolderPath = join(process.cwd(), "./public");
+server.use(express.static(staticFolderPath));
+
 server.use("/authors", authorsRouter);
 server.use("/posts", blogPostsRouter);
 // ************************ END **********************
