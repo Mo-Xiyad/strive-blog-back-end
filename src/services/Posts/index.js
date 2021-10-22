@@ -170,6 +170,50 @@ blogPostsRouter.get("/:postId/comments", async (req, res, next) => {
     next(error);
   }
 });
+
+// 3. PU COMMENTS
+blogPostsRouter.put("/:postId/comments/:commentId", async (req, res, next) => {
+  const posts = await getPosts();
+  const post = posts.find((p) => p._id === req.params.postId);
+
+  const index = posts.findIndex((p) => p._id === req.params.postId);
+
+  const comment = post.comments.find((c) => c._ic === req.params.commentId);
+
+  comment = req.body;
+});
+// 4. DELETE COMMENTS
+blogPostsRouter.delete(
+  "/:postId/comments/:commentId",
+  async (req, res, next) => {
+    try {
+      const posts = await getPosts();
+
+      const index = posts.findIndex((p) => p._id === req.params.postId);
+
+      const post = posts.find((p) => p._id === req.params.postId);
+
+      const comment = post.comments.filter(
+        (c) => c._id !== req.params.commentId
+      );
+
+      post.comments = comment;
+
+      posts[index] = post;
+
+      await writePosts(posts);
+
+      res.status(200).send(post);
+
+      console.log(comment);
+    } catch (error) {
+      console.log(error);
+
+      next(error);
+    }
+  }
+);
+
 // ***************  END COMMENTS  ***************
 
 // ***************  IMAGE UPLOAD  ***************
@@ -181,12 +225,9 @@ blogPostsRouter.post(
   async (req, res, next) => {
     try {
       const extention = path.extname(req.file.originalname);
-
+      const fıleName = req.params.postId + extention;
       if (req.file) {
-        await saveBlogPostsPictures(
-          req.params.postId + extention,
-          req.file.buffer
-        );
+        await saveBlogPostsPictures(fıleName, req.file.buffer);
 
         const converUrl = `http://localhost:3001/img/posts/${req.params.postId}${extention}`;
 
@@ -195,6 +236,7 @@ blogPostsRouter.post(
         const post = posts.find((p) => p._id === req.params.postId);
 
         post.cover = converUrl;
+        post.coverFileName = fıleName;
 
         const postArray = posts.filter((p) => p._id !== req.params.postId);
 
@@ -211,6 +253,19 @@ blogPostsRouter.post(
     }
   }
 );
+
+// blogPostsRouter.delete()
+
+/**
+ * 
+ * 
+ *  send post id in delete request
+ * find post
+ * 
+
+
+      await fs.unlink(path.join(publıcFolderPath,post.coverFileName))
+ */
 
 // ***************  END IMAGE UPLOAD  ***************
 
