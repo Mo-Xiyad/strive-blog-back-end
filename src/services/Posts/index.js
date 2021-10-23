@@ -17,6 +17,7 @@ import { blogPostsValidationMiddlewares } from "./validation.js";
 
 const blogPostsRouter = express.Router();
 
+// ***************  BLOG POSTS  ***************
 // 1.
 blogPostsRouter.get("/", async (req, res, next) => {
   try {
@@ -67,7 +68,7 @@ blogPostsRouter.post(
         const newPost = { _id: uniqid(), ...req.body, createdAt: new Date() };
 
         const posts = await getPosts();
-        console.log();
+        // console.log();
         posts.push(newPost);
 
         await writePosts(posts);
@@ -121,7 +122,7 @@ blogPostsRouter.delete("/:postId", async (req, res, next) => {
   }
 });
 
-//
+// ***************  END BLOG POSTS  ***************
 
 // ***************  COMMENTS SECTION  ***************
 
@@ -158,11 +159,11 @@ blogPostsRouter.post(
 blogPostsRouter.get("/:postId/comments", async (req, res, next) => {
   try {
     const posts = await getPosts();
-    console.log(posts);
+    // console.log(posts);
     const post = posts.find((p) => p._id === req.params.postId);
     if (req.params.postId) {
-      console.log(req.params.postId);
       res.status(200).send(post);
+      // console.log('');
     } else {
       res.status(404).send(`post with ${req.params.postId} does not exist`);
     }
@@ -205,7 +206,7 @@ blogPostsRouter.delete(
 
       res.status(200).send(post);
 
-      console.log(comment);
+      console.log("Comment Deleted ---->", comment);
     } catch (error) {
       console.log(error);
 
@@ -245,7 +246,7 @@ blogPostsRouter.post(
         await writePosts(postArray);
         res.send(post);
       } else {
-        console.log(req.file.buffer);
+        console.log("Eorror with posting");
       }
     } catch (error) {
       console.log(req.file);
