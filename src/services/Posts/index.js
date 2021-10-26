@@ -162,7 +162,7 @@ blogPostsRouter.get("/:postId/comments", async (req, res, next) => {
     // console.log(posts);
     const post = posts.find((p) => p._id === req.params.postId);
     if (req.params.postId) {
-      res.status(200).send(post.comments);
+      res.status(200).send(post);
       // console.log('');
     } else {
       res.status(404).send(`post with ${req.params.postId} does not exist`);
