@@ -1,6 +1,7 @@
 import express, { query } from "express";
 import path from "path";
-// import express from "express";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
 import createHttpError from "http-errors";
 import uniqid from "uniqid";
@@ -220,34 +221,42 @@ blogPostsRouter.delete(
 // ***************  IMAGE UPLOAD  ***************
 
 // POST PICTURS
+
+// studentsRouter.put("/:studentId/profilePic", multer, async (req, res, next) => {
+//   try {
+// 1. read students.json file
+// 2. find student by studentID
+// 3. edit the student by adding img: "http://localhost:3001/${studentID}.gif"
+// 4. save student back to students.json file
+//   } catch (error) {
+//     next(error)
+//   }
+// })
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary, // CREDENTIALS, this line of code is going to search in your process.env for something called CLOUDINARY_URL
+  params: {
+    folder: "strive-blog",
+  },
+});
 blogPostsRouter.post(
   "/:postId/blogPostCover",
-  multer().single("cover"),
+  multer({ storage: cloudinaryStorage }).single("cover"),
   async (req, res, next) => {
     try {
-      const extention = path.extname(req.file.originalname);
-      const fıleName = req.params.postId + extention;
-      if (req.file) {
-        await saveBlogPostsPictures(fıleName, req.file.buffer);
+      const converUrl = req.file.path;
 
-        const converUrl = `http://localhost:3001/img/posts/${req.params.postId}${extention}`;
+      const posts = await getPosts();
 
-        const posts = await getPosts();
+      const post = posts.find((p) => p._id === req.params.postId);
 
-        const post = posts.find((p) => p._id === req.params.postId);
+      post.cover = converUrl;
 
-        post.cover = converUrl;
-        post.coverFileName = fıleName;
+      const postArray = posts.filter((p) => p._id !== req.params.postId);
 
-        const postArray = posts.filter((p) => p._id !== req.params.postId);
+      postArray.push(post);
 
-        postArray.push(post);
-
-        await writePosts(postArray);
-        res.send(post);
-      } else {
-        console.log("Eorror with posting");
-      }
+      await writePosts(postArray);
+      res.send(post);
     } catch (error) {
       console.log(req.file);
       next(error);
