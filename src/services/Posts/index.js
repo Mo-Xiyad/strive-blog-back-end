@@ -221,17 +221,6 @@ blogPostsRouter.delete(
 // ***************  IMAGE UPLOAD  ***************
 
 // POST PICTURS
-
-// studentsRouter.put("/:studentId/profilePic", multer, async (req, res, next) => {
-//   try {
-// 1. read students.json file
-// 2. find student by studentID
-// 3. edit the student by adding img: "http://localhost:3001/${studentID}.gif"
-// 4. save student back to students.json file
-//   } catch (error) {
-//     next(error)
-//   }
-// })
 const cloudinaryStorage = new CloudinaryStorage({
   cloudinary, // CREDENTIALS, this line of code is going to search in your process.env for something called CLOUDINARY_URL
   params: {
