@@ -27,3 +27,28 @@
 ###### Run the app
 
 `npm run dev`
+
+## before Deploying to the cloud
+
+<strong>Packages</strong>
+
+- `npm i dotenv`
+- `npm i cloudinary` --> this package is to store the static files (pictures..)
+- `npm i multer-storage-cloudinary` --> This package is needs to be installed inorder to uplaod the files to the cloud
+
+<strong>Env Variables </strong>
+
+- create .evn file and set '`FE_LOCAL_URL = http://localhost:3000`' this variable is port where the app will be running locally `only for the Front-end app (React app)`
+- Next set another varibale called `FE_PROD_URL=https://${front-end-app}.vercel.app` this varibaleis going to contain the application web production web `URL` the link will be avalable one the application is hoset on the cloud
+- Very important set varibale for `CLOUDINARY_URL=${in here the token form the CLOUDINARY website}`
+- `PORT=3001`
+
+## On the Cloud
+
+- `https://heroku.com/`
+
+Setting --> Configs Vars -->
+
+- `CLOUDINARY_URL = {in here the token form the CLOUDINARY website}`
+- `FE_LOCAL_URL = http://localhost:3000`
+- `FE_PROD_URL=https://${front-end-app}.vercel.app`
