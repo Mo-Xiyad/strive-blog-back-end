@@ -256,9 +256,11 @@ blogPostsRouter.post(
       postArray.push(post);
 
       await writePosts(postArray);
+      console.log(req.file);
       res.send(post);
     } catch (error) {
       console.log(req.file);
+      console.log(error);
       next(error);
     }
   }
