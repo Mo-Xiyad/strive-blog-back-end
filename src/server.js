@@ -25,8 +25,23 @@ const loggeMiddleWare = (req, res, next) => {
   next();
 };
 
+// ******************** CORS SETUP FOR CLOUD HOSTING **********************
+
+const whitelist = [process.env.FE_LOCAL_URL, process.env.FE_PROD_URL];
+
+const corsOptions = {
+  origin: function (origin, next) {
+    console.log("CURRENT ORIGIN AT:", origin);
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      next(null, true);
+    } else {
+      next(new Error("CORS ERROR"));
+    }
+  },
+};
+
+server.use(cors(corsOptions));
 server.use(loggeMiddleWare);
-server.use(cors());
 server.use(express.json());
 
 // ************************ ENDPOINTS **********************
@@ -46,7 +61,8 @@ server.use(genericErrorHandler);
 
 // ******************** END ERROR MIDDLEWARES **********************
 
-const port = 3001;
+// this port is coming from the evn file from local dev machine
+const port = process.env.PORT;
 
 console.table(listEndpoints(server));
 
