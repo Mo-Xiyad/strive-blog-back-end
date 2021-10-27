@@ -231,7 +231,7 @@ const cloudinaryStorage = new CloudinaryStorage({
     folder: "strive-blog",
   },
 });
-blogPostsRouter.post(
+blogPostsRouter.put(
   "/:postId/blogPostCover",
   multer({ storage: cloudinaryStorage }).single("cover"),
   async (req, res, next) => {
