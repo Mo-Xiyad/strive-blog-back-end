@@ -3,6 +3,10 @@ import path from "path";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { v2 as cloudinary } from "cloudinary";
 
+import { pipeline } from "stream";
+import { createGzip } from "zlib";
+import { getPDFReadableStream } from "../../lib/pdf-tools.js";
+
 import createHttpError from "http-errors";
 import uniqid from "uniqid";
 import multer from "multer";
@@ -254,6 +258,35 @@ blogPostsRouter.post(
     }
   }
 );
+
+// ******************   DOWNLOAD POST   ******************
+blogPostsRouter.get("/:postId/downloadPostPDF", async (req, res, next) => {
+  try {
+    const posts = await getPosts();
+
+    const post = posts.find((p) => p._id === req.params.postId);
+
+    if (!post) {
+      res
+        .status(404)
+        .send({ message: `blog with ${req.params.postId} is not found!` });
+    }
+
+    const source = await getPDFReadableStream(post); // PDF READABLE STREAM
+    const destination = res;
+
+    res.setHeader("Content-Disposition", "attachment; filename=post.pdf");
+
+    pipeline(source, destination, (err) => {
+      if (err) next(err);
+
+      console.log(err);
+    });
+  } catch (error) {
+    next(error);
+    res.sendStatus({ message: error.message });
+  }
+});
 
 // blogPostsRouter.delete()
 
