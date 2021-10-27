@@ -1,6 +1,9 @@
 import PdfPrinter from "pdfmake";
 import striptags from "striptags";
 import axios from "axios";
+
+// https://medium.com/@rakeshuce1990/ionic-how-to-create-pdf-file-with-pdfmake-step-by-step-75b25aa541a4
+
 const fonts = {
   Roboto: {
     normal: "Helvetica",
