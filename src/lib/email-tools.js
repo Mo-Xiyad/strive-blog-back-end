@@ -2,11 +2,19 @@ import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY); // Do not forget this and double check that process.env.SENDGRID_KEY is NOT undefined
 
-export const sendNewPostEmail = async (recipientAddress, post) => {
+export const sendNewPostEmail = async (email, post, pdf) => {
   const msg = {
-    to: recipientAddress,
+    to: email,
     from: process.env.SENDER_EMAIL,
     subject: "Your most recent post",
+    attachments: [
+      {
+        content: pdf,
+        filename: `${post._id}`,
+        type: "application/pdf",
+        disposition: "attachment",
+      },
+    ],
     text: "and easy to do anywhere, even with Node.js",
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:v="urn:schemas-microsoft-com:vml" lang="en">
   

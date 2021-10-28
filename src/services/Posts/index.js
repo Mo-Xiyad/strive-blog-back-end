@@ -1,12 +1,13 @@
 import express, { query } from "express";
 import path from "path";
+import fs from "fs-extra";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { v2 as cloudinary } from "cloudinary";
 
 import { pipeline } from "stream";
 import { createGzip } from "zlib";
 import json2csv from "json2csv";
-import { getPDFReadableStream } from "../../lib/pdf-tools.js";
+import { getPDFReadableStream, generatePDFAsync } from "../../lib/pdf-tools.js";
 import { sendNewPostEmail } from "../../lib/email-tools.js";
 
 import createHttpError from "http-errors";
@@ -99,7 +100,7 @@ blogPostsRouter.post(
         const newPost = { _id: uniqid(), ...req.body, createdAt: new Date() };
 
         const posts = await getPosts();
-        // console.log();
+
         posts.push(newPost);
 
         await writePosts(posts);
@@ -275,7 +276,12 @@ blogPostsRouter.put(
       postArray.push(post);
 
       await writePosts(postArray);
-      console.log(req.file);
+
+      const pdf = await generatePDFAsync(post);
+      const converPdf = fs.readFileSync(pdf).toString("base64");
+      const email = post.author.email;
+      await sendNewPostEmail(email, post, converPdf);
+
       res.send(post);
     } catch (error) {
       console.log(req.file);
@@ -315,6 +321,7 @@ blogPostsRouter.get("/:postId/downloadPostPDF", async (req, res, next) => {
 });
 
 // SENDING EMAIL AFTER THE POST IS POSTED --------------------------------
+// this end point is not used, inseted EMAIL is sending is heppening inside the ""/:postId/blogPostCover"" After posting of the Blog post image
 blogPostsRouter.post("/:postID/newPost", async (req, res, next) => {
   try {
     // 1. Receive email address via req.body
@@ -338,7 +345,21 @@ blogPostsRouter.post("/:postID/newPost", async (req, res, next) => {
 });
 
 // ******************   DOWNLOAD POST ASYNC   ******************
-// blogPostsRouter.get(":postID/");
+// this end point is not used, inseted Async PDF is downloaded inside the ""/:postId/blogPostCover""
+blogPostsRouter.get("/:postId/PDFAsync", async (req, res, next) => {
+  try {
+    const posts = await getPosts();
+
+    const post = posts.find((p) => p._id === req.params.postId);
+    // 1. Generate the PDF (with pdfmake)
+    const path = await generatePDFAsync(post);
+    // 2. Do stuff with the generated PDF (example --> send it as an attachment to email)
+
+    res.send(path);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // blogPostsRouter.delete()
 
