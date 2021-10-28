@@ -3,6 +3,9 @@ import cors from "cors";
 import listEndpoints from "express-list-endpoints";
 import { join } from "path";
 
+import swaggerUI from "swagger-ui-express";
+import yaml from "yamljs";
+
 import authorsRouter from "./services/Authors/index.js";
 import blogPostsRouter from "./services/Posts/index.js";
 
@@ -13,7 +16,8 @@ import {
   notFoundHandler,
 } from "./errorHandlers.js";
 
-import { getPosts, writePosts } from "./lib/fs-tools.js";
+// Run the api on the server side url Ex, "localhost:3001"
+const yamlAPIDocument = yaml.load(join(process.cwd(), "./src/apiDoc.yml"));
 
 const server = express();
 
@@ -24,7 +28,6 @@ const loggeMiddleWare = (req, res, next) => {
   );
   next();
 };
-
 // ******************** CORS SETUP FOR CLOUD HOSTING **********************
 
 const whitelist = [process.env.FE_LOCAL_URL, process.env.FE_PROD_URL];
@@ -45,11 +48,13 @@ server.use(loggeMiddleWare);
 server.use(express.json());
 
 // ************************ ENDPOINTS **********************
+
 const staticFolderPath = join(process.cwd(), "./public");
 server.use(express.static(staticFolderPath));
-
 server.use("/authors", authorsRouter);
 server.use("/posts", blogPostsRouter);
+server.use("/docsAPI", swaggerUI.serve, swaggerUI.setup(yamlAPIDocument));
+
 // ************************ END **********************
 
 // ******************** ERROR MIDDLEWARES **********************

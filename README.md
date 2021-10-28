@@ -18,6 +18,10 @@
 - `npm i fs-extra ----> this package helps to use some extra methods for reading and writing JSON files ------WORKING WITH FILES GREAT------`
 - `npm i multer ---> this package is used for uploading pictures ---- methods like single and multiple media files`
 - `npm i validator ----> for my own custom validation` <a href="https://github.com/validatorjs/validator.js#validators"> Check out the docs <strong> Validation</strong> </a>
+- `npm i image-to-base64 ----> for converting images to base64`
+- `npm i @sendgrid/mail ----> for sending emails`
+- `npm i swagger-ui-express ----> for creating API documentation`
+- `npm i yamljs ----> To run yamljs Files (API Documentation)`
 
 ##### setup Package.json
 
