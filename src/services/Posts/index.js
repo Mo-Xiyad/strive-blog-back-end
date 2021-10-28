@@ -7,6 +7,7 @@ import { pipeline } from "stream";
 import { createGzip } from "zlib";
 import json2csv from "json2csv";
 import { getPDFReadableStream } from "../../lib/pdf-tools.js";
+import { sendNewPostEmail } from "../../lib/email-tools.js";
 
 import createHttpError from "http-errors";
 import uniqid from "uniqid";
@@ -24,7 +25,7 @@ import { blogPostsValidationMiddlewares } from "./validation.js";
 
 const blogPostsRouter = express.Router();
 
-// ***************  DOWNLOADS  ***************
+// ***************  DOWNLOAD CSV  ***************
 blogPostsRouter.get("/downloadCSV-authos", async (req, res, next) => {
   try {
     res.setHeader("Content-Disposition", "attachment; filename=authors.csv");
@@ -32,7 +33,7 @@ blogPostsRouter.get("/downloadCSV-authos", async (req, res, next) => {
     const source = getPostsReadableStream();
 
     const transform = new json2csv.Transform({
-      fields: ["author.name", "author.avatar"],
+      fields: ["author.name", "author.avatar", "author.email"],
     });
 
     const destination = res;
@@ -46,8 +47,6 @@ blogPostsRouter.get("/downloadCSV-authos", async (req, res, next) => {
     next(error);
   }
 });
-
-// ***************  END DOWNLOADS  ***************
 
 // ***************  BLOG POSTS  ***************
 // 1.
@@ -286,7 +285,7 @@ blogPostsRouter.put(
   }
 );
 
-// ******************   DOWNLOAD POST   ******************
+// ******************   DOWNLOAD POST AS PDF   ******************
 blogPostsRouter.get("/:postId/downloadPostPDF", async (req, res, next) => {
   try {
     const posts = await getPosts();
@@ -315,7 +314,28 @@ blogPostsRouter.get("/:postId/downloadPostPDF", async (req, res, next) => {
   }
 });
 
-// ******************   DOWNLOAD AUTHORS CSV   ******************
+// SENDING EMAIL AFTER THE POST IS POSTED --------------------------------
+blogPostsRouter.post("/:postID/newPost", async (req, res, next) => {
+  try {
+    // 1. Receive email address via req.body
+    const posts = await getPosts();
+    const post = posts.find((p) => p._id === req.params.postID);
+    console.log(post);
+
+    // const { email } = req.body;
+    const email = post.author.email;
+
+    // 2. Send email on that address
+    await sendNewPostEmail(email, post);
+
+    // 3. Send ok
+    res.send("ok");
+  } catch (error) {
+    next(error);
+    console.log(error);
+    res.send(error);
+  }
+});
 
 // ******************   DOWNLOAD POST ASYNC   ******************
 // blogPostsRouter.get(":postID/");
