@@ -5,6 +5,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 import { pipeline } from "stream";
 import { createGzip } from "zlib";
+import json2csv from "json2csv";
 import { getPDFReadableStream } from "../../lib/pdf-tools.js";
 
 import createHttpError from "http-errors";
@@ -15,12 +16,38 @@ import {
   getPosts,
   writePosts,
   saveBlogPostsPictures,
+  getPostsReadableStream,
 } from "../../lib/fs-tools.js";
 
 import { validationResult } from "express-validator";
 import { blogPostsValidationMiddlewares } from "./validation.js";
 
 const blogPostsRouter = express.Router();
+
+// ***************  DOWNLOADS  ***************
+blogPostsRouter.get("/downloadCSV-authos", async (req, res, next) => {
+  try {
+    res.setHeader("Content-Disposition", "attachment; filename=authors.csv");
+
+    const source = getPostsReadableStream();
+
+    const transform = new json2csv.Transform({
+      fields: ["author.name", "author.avatar"],
+    });
+
+    const destination = res;
+
+    pipeline(source, transform, destination, (err) => {
+      if (err) next(err);
+      console.log(err);
+    });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+// ***************  END DOWNLOADS  ***************
 
 // ***************  BLOG POSTS  ***************
 // 1.
@@ -177,7 +204,7 @@ blogPostsRouter.get("/:postId/comments", async (req, res, next) => {
   }
 });
 
-// 3. PU COMMENTS
+// 3. PUT COMMENTS
 blogPostsRouter.put("/:postId/comments/:commentId", async (req, res, next) => {
   const posts = await getPosts();
   const post = posts.find((p) => p._id === req.params.postId);
@@ -287,6 +314,11 @@ blogPostsRouter.get("/:postId/downloadPostPDF", async (req, res, next) => {
     res.sendStatus({ message: error.message });
   }
 });
+
+// ******************   DOWNLOAD AUTHORS CSV   ******************
+
+// ******************   DOWNLOAD POST ASYNC   ******************
+// blogPostsRouter.get(":postID/");
 
 // blogPostsRouter.delete()
 
