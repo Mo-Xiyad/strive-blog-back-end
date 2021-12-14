@@ -9,6 +9,7 @@ import yaml from "yamljs";
 
 import usersRouter from "./services/Users/oldUserRouter.js";
 import blogPostsRouter from "./services/Posts/index.js";
+import blogPostsRouterDB from "./services/Posts/posts.js";
 
 import {
   genericErrorHandler,
@@ -57,6 +58,7 @@ server.use(express.static(staticFolderPath));
 server.use("/users", usersRouter);
 server.use("/usersFromDb", usersRouterDB);
 server.use("/posts", blogPostsRouter);
+server.use("/postsFromDb", blogPostsRouterDB);
 server.use("/docsAPI", swaggerUI.serve, swaggerUI.setup(yamlAPIDocument));
 
 // ************************ END **********************
