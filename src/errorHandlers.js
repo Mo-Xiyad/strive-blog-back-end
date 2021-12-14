@@ -9,7 +9,10 @@ export const badRequestHandler = (err, req, res, next) => {
 
 export const unauthorizedHandler = (err, req, res, next) => {
   if (err.status === 401) {
-    res.status(401).send({ Message: "Unauthorized" });
+    res.status(401).send({
+      status: "error",
+      message: err.message || "You are not logged in!",
+    });
   } else {
     next(err);
   }
@@ -19,7 +22,18 @@ export const notFoundHandler = (err, req, res, next) => {
   if (err.status === 404) {
     res
       .status(404)
-      .send({ Message: err.message || "Resouce not found!", success: false });
+      .send({ Message: err.message || "Resource not found!", success: false });
+  } else {
+    next(err);
+  }
+};
+
+export const forbiddenHandler = (err, req, res, next) => {
+  if (err.status === 403) {
+    res.status(403).send({
+      status: "error",
+      message: err.message || "You are not allowed to do that!",
+    });
   } else {
     next(err);
   }

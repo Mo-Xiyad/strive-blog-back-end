@@ -7,7 +7,7 @@ import uniqid from "uniqid";
 
 import createHttpError from "http-errors";
 import { validationResult } from "express-validator";
-import { authorsValidationMiddlewares } from "./validation.js";
+import { authorsValidationMiddleware } from "./validation.js";
 
 const authorsRouter = express.Router();
 
@@ -30,7 +30,7 @@ const anotherLoggerMiddleware = (req, res, next) => {
 };
 
 // 1.
-authorsRouter.post("/", authorsValidationMiddlewares, (req, res, next) => {
+authorsRouter.post("/", authorsValidationMiddleware, (req, res, next) => {
   try {
     const errorsList = validationResult(req);
 
