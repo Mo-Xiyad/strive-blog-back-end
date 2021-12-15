@@ -1,12 +1,14 @@
 import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
-import UserModel from "../services/users/schema.js";
+import UserModel from "../db/usersSchema.js";
 
 export const JWTAuthenticate = async (user) => {
+  console.log("=======> INside the JWTAuthenticate Function", user);
   // 1. given the user generates tokens (access and refresh)
   const accessToken = await generateJWTToken({ _id: user._id });
   const refreshToken = await generateRefreshToken({ _id: user._id });
 
+  console.log("=======> INside the JWTAuthenticate Function", refreshToken);
   // 2. refresh token should be saved in db
   user.refreshToken = refreshToken;
   await user.save();
@@ -27,7 +29,12 @@ const generateJWTToken = (payload) =>
       }
     )
   );
-
+/* on the terminal
+--> node
+Welcome to Node.js v14.18.0.
+Type ".help" for more information.
+> require("crypto").randomBytes(64).toString("hex")
+ */
 const generateRefreshToken = (payload) =>
   new Promise((resolve, reject) =>
     jwt.sign(

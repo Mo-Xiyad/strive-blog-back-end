@@ -4,8 +4,13 @@ import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
 import { authorsValidationMiddleware } from "./validation.js";
 import UserModel from "../../db/usersSchema.js";
-import { basicAuthMiddleware } from "../../auth/user.js";
 import { adminOnlyMiddleware } from "../../auth/admin.js";
+import { basicAuthMiddleware } from "../../auth/user.js"; // this is being replaced with JWT authentication middleware
+import { JWTAuthMiddleware } from "../../auth/jwt-Tokens.js";
+import {
+  JWTAuthenticate,
+  verifyRefreshAndGenerateTokens,
+} from "../../auth/jwtTools.js";
 
 const usersRouterDB = express.Router();
 
@@ -33,7 +38,7 @@ usersRouterDB.post("/", authorsValidationMiddleware, async (req, res, next) => {
 });
 
 // 2.
-usersRouterDB.get("/", anotherLoggerMiddleware, async (req, res, next) => {
+usersRouterDB.get("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const users = await UserModel.find();
     res.send(users);
@@ -42,7 +47,7 @@ usersRouterDB.get("/", anotherLoggerMiddleware, async (req, res, next) => {
   }
 });
 
-usersRouterDB.get("/me", basicAuthMiddleware, async (req, res, next) => {
+usersRouterDB.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     res.send(req.user);
   } catch (error) {
@@ -51,7 +56,7 @@ usersRouterDB.get("/me", basicAuthMiddleware, async (req, res, next) => {
 });
 
 // 3.
-usersRouterDB.get("/:userId", basicAuthMiddleware, async (req, res, next) => {
+usersRouterDB.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const user = await UserModel.findById(req.params.userId, {
       __v: 0, //this second parameter is projecting what not to show
@@ -77,7 +82,7 @@ usersRouterDB.get("/:userId", basicAuthMiddleware, async (req, res, next) => {
   }
 });
 
-usersRouterDB.put("/me", basicAuthMiddleware, async (req, res, next) => {
+usersRouterDB.put("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     // const { name, surname, email, password, avatar, role } = req.user;
     // const obj = {
@@ -124,7 +129,7 @@ usersRouterDB.put("/me", basicAuthMiddleware, async (req, res, next) => {
 // 4.
 usersRouterDB.put(
   "/:userId",
-  basicAuthMiddleware,
+  JWTAuthMiddleware,
   adminOnlyMiddleware,
   async (req, res, next) => {
     try {
@@ -148,7 +153,7 @@ usersRouterDB.put(
   }
 );
 
-usersRouterDB.delete("/me", basicAuthMiddleware, async (req, res, next) => {
+usersRouterDB.delete("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     await req.user.deleteOne();
     res.status(204).send();
@@ -159,7 +164,7 @@ usersRouterDB.delete("/me", basicAuthMiddleware, async (req, res, next) => {
 
 usersRouterDB.delete(
   "/:userId",
-  basicAuthMiddleware,
+  JWTAuthMiddleware,
   adminOnlyMiddleware,
   async (req, res, next) => {
     try {
@@ -177,5 +182,47 @@ usersRouterDB.delete(
     }
   }
 );
+
+usersRouterDB.post("/login", async (req, res, next) => {
+  try {
+    // 1. Get credentials from req.body
+    const { email, password } = req.body;
+
+    // 2. Verify credentials
+    const user = await UserModel.checkCredentials(email, password);
+
+    if (user) {
+      // console.log(user);
+      // console.log(password);
+      // 3. If credentials are fine we are going to generate an access token
+      const { accessToken, refreshToken } = await JWTAuthenticate(user);
+      res.send({ accessToken, refreshToken });
+    } else {
+      // 4. If they are not --> error (401)
+      next(createHttpError(401, "Credentials not ok!"));
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+usersRouterDB.post("/refreshToken", async (req, res, next) => {
+  try {
+    // 1. Receive the current refresh token from req.body
+    const { currentRefreshToken } = req.body;
+
+    // 2. Check the validity of that (check if it is not expired, check if it hasn't been compromised, check if it is in db)
+    const { accessToken, refreshToken } = await verifyRefreshAndGenerateTokens(
+      currentRefreshToken
+    );
+
+    // 3. If everything is fine --> generate a new pair of tokens (accessToken and refreshToken)
+
+    // 4. Send tokens back as a response
+    res.send({ accessToken, refreshToken });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default usersRouterDB;
