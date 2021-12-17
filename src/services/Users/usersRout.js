@@ -1,12 +1,16 @@
 import express from "express";
 import createHttpError from "http-errors";
 import bcrypt from "bcrypt";
+import passport from "passport";
+
 import { validationResult } from "express-validator";
 import { authorsValidationMiddleware } from "./validation.js";
 import UserModel from "../../db/usersSchema.js";
+
 import { adminOnlyMiddleware } from "../../auth/admin.js";
 import { basicAuthMiddleware } from "../../auth/user.js"; // this is being replaced with JWT authentication middleware
 import { JWTAuthMiddleware } from "../../auth/jwt-Tokens.js";
+
 import {
   JWTAuthenticate,
   verifyRefreshAndGenerateTokens,
@@ -55,6 +59,29 @@ usersRouterDB.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   }
 });
 
+usersRouterDB.get(
+  "/googleLogin",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+); // This endpoint receives Google Login requests from our FE, and it is going to redirect them to Google Consent Screen
+
+http: usersRouterDB.get(
+  "/googleRedirect",
+  passport.authenticate("google"),
+  async (req, res, next) => {
+    // This endpoint URL needs to match EXACTLY to the one configured on google.cloud dashboard
+    try {
+      // Thanks to passport.serialize we are going to receive the tokens in the request
+      console.log("TOKENS: ", req.user.tokens);
+
+      res.redirect(
+        `${process.env.FE_LOCAL_URL}?accessToken=${req.user.tokens.accessToken}&refreshToken=${req.user.tokens.refreshToken}`
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // 3.
 usersRouterDB.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   try {
@@ -84,17 +111,11 @@ usersRouterDB.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
 
 usersRouterDB.put("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
-    // const { name, surname, email, password, avatar, role } = req.user;
-    // const obj = {
-    //   name: name,
-    //   surname: surname,
-    //   email: email,
-    //   password: password,
-    //   avatar: avatar,
-    //   role: role,
-    // };
-    // req.user = { ...req.user, ...req.body };
-
+    const userObj = req.user.toObject();
+    console.log(userObj);
+    console.log(req.user);
+    req.user = { ...userObj, ...req.body };
+    await req.user.save();
     // +++++++++++++++++++++++++++++++++++++++++++++++++
 
     /* const updateInfo = Object.entries(req.body);
@@ -105,19 +126,19 @@ usersRouterDB.put("/me", JWTAuthMiddleware, async (req, res, next) => {
     res.send(userUpdated); */
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++
-    const id = req.user._id.toString();
-    if (req.body.password) {
-      req.body.password = await bcrypt.hash(req.body.password, 10);
-      const updatedUser = await UserModel.findByIdAndUpdate(id, req.body, {
-        new: true,
-      });
-      res.send(updatedUser);
-    } else {
-      const updatedUser = await UserModel.findByIdAndUpdate(id, req.body, {
-        new: true,
-      });
-      res.send(updatedUser);
-    }
+    // const id = req.user._id.toString();
+    // if (req.body.password) {
+    //   req.body.password = await bcrypt.hash(req.body.password, 10);
+    //   const updatedUser = await UserModel.findByIdAndUpdate(id, req.body, {
+    //     new: true,
+    //   });
+    //   res.send(updatedUser);
+    // } else {
+    //   const updatedUser = await UserModel.findByIdAndUpdate(id, req.body, {
+    //     new: true,
+    //   });
+    //   res.send(updatedUser);
+    // }
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++
   } catch (error) {

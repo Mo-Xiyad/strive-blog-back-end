@@ -15,10 +15,21 @@ const UserSchema = new Schema(
       validate: [isEmail, "invalid email"],
       unique: true,
     },
-    password: { type: String, required: true },
+    password: {
+      type: String,
+      required: function () {
+        return !this.googleId;
+      },
+    },
     avatar: { type: String },
     role: { type: String },
     refreshToken: { type: String },
+    googleId: {
+      type: String,
+      required: function () {
+        return !this.password;
+      },
+    },
   },
   { timestamps: true }
 );

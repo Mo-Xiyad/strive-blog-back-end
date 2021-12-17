@@ -42,5 +42,7 @@ export const forbiddenHandler = (err, req, res, next) => {
 export const genericErrorHandler = (err, req, res, next) => {
   console.log(err.errorsList);
 
+  console.log(err);
+
   res.status(500).send({ Message: "Generic Server Error" });
 };

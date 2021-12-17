@@ -3,6 +3,7 @@ import cors from "cors";
 import listEndpoints from "express-list-endpoints";
 import { join } from "path";
 import mongoose from "mongoose";
+import passport from "passport";
 
 import swaggerUI from "swagger-ui-express";
 import yaml from "yamljs";
@@ -10,6 +11,7 @@ import yaml from "yamljs";
 import usersRouter from "./services/Users/oldUserRouter.js";
 import blogPostsRouter from "./services/Posts/index.js";
 import blogPostsRouterDB from "./services/Posts/posts.js";
+import GoogleStrategy from "./auth/googleOAuth.js";
 
 import {
   genericErrorHandler,
@@ -47,9 +49,15 @@ const corsOptions = {
   },
 };
 
+// ****************************** MIDDLEWARE'S ******************************
+
+passport.use("google", GoogleStrategy);
+
 server.use(cors(corsOptions));
 server.use(loggerMiddleWare);
 server.use(express.json());
+
+server.use(passport.initialize());
 
 // ************************ ENDPOINTS **********************
 
