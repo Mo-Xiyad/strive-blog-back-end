@@ -17,10 +17,12 @@ import path from "path";
 import fs from "fs-extra";
 
 import multer from "multer";
+import comments from "../comments/handlers.js";
 
 import { JWTAuthMiddleware } from "../../auth/jwt-Tokens.js";
 import { adminOnlyMiddleware } from "../../auth/admin.js";
 import { basicAuthMiddleware } from "../../auth/user.js";
+
 const blogPostsRouterDB = express.Router();
 /*
 q2m translates something like /books?limit=5&sort=-price&offset=15&price<10&category=fantasy into something that could be directly usable by mongo like
@@ -108,7 +110,7 @@ blogPostsRouterDB.post("/", JWTAuthMiddleware, async (req, res, next) => {
   }
 });
 
-blogPostsRouterDB.get("/:postId", async (req, res, next) => {
+blogPostsRouterDB.get("/:postId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const id = req.params.postId;
     const post = await PostModel.findById(id, {
@@ -127,7 +129,7 @@ blogPostsRouterDB.get("/:postId", async (req, res, next) => {
   }
 });
 
-blogPostsRouterDB.put("/:postId", async (req, res, next) => {
+blogPostsRouterDB.put("/:postId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const id = req.params.postId;
     const updatePost = await PostModel.findByIdAndUpdate(id, req.body, {
@@ -145,20 +147,24 @@ blogPostsRouterDB.put("/:postId", async (req, res, next) => {
   }
 });
 
-blogPostsRouterDB.delete("/:postId", async (req, res, next) => {
-  try {
-    const id = req.params.postId;
-    const deletePost = await PostModel.findByIdAndDelete(id);
-    if (deletePost) {
-      res.status(204).send();
-    } else {
-      next(createHttpError(404, `User with id ${id} not found!`));
+blogPostsRouterDB.delete(
+  "/:postId",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const id = req.params.postId;
+      const deletePost = await PostModel.findByIdAndDelete(id);
+      if (deletePost) {
+        res.status(204).send();
+      } else {
+        next(createHttpError(404, `User with id ${id} not found!`));
+      }
+    } catch (error) {
+      console.log(error);
+      next(error);
     }
-  } catch (error) {
-    console.log(error);
-    next(error);
   }
-});
+);
 
 // upload image
 // POST PICTURS
@@ -171,6 +177,7 @@ const cloudinaryStorage = new CloudinaryStorage({
 blogPostsRouterDB.put(
   "/:postId/uploadImage",
   multer({ storage: cloudinaryStorage }).single("cover"),
+  JWTAuthMiddleware,
   async (req, res, next) => {
     try {
       const imgUrl = req.file.path;
@@ -191,33 +198,48 @@ blogPostsRouterDB.put(
   }
 );
 
-blogPostsRouterDB.put("/:postId/likes", async (req, res, next) => {
-  try {
-    const id = req.params.postId;
-    const post = await PostModel.findById(id);
-    if (post) {
-      const liked = await PostModel.findOne({
-        _id: id,
-        likes: new mongoose.Types.ObjectId(req.body.userId),
-      });
-      if (!liked) {
-        await PostModel.findByIdAndUpdate(
-          id,
-          { $push: { likes: req.body.userId } },
-          { new: true }
-        );
+blogPostsRouterDB.put(
+  "/:postId/likes",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const id = req.params.postId;
+      const post = await PostModel.findById(id);
+      if (post) {
+        const liked = await PostModel.findOne({
+          _id: id,
+          likes: new mongoose.Types.ObjectId(req.body.userId),
+        });
+        if (!liked) {
+          await PostModel.findByIdAndUpdate(
+            id,
+            { $push: { likes: req.body.userId } },
+            { new: true }
+          );
+        } else {
+          await PostModel.findByIdAndUpdate(
+            id,
+            { $pull: { likes: req.body.userId } },
+            { new: true }
+          );
+        }
       } else {
-        await PostModel.findByIdAndUpdate(
-          id,
-          { $pull: { likes: req.body.userId } },
-          { new: true }
-        );
+        next(createHttpError(404, `User with id ${id} not found!`));
       }
-    } else {
-      next(createHttpError(404, `User with id ${id} not found!`));
-    }
-    res.send(post);
-  } catch (error) {}
-});
+      res.send(post);
+    } catch (error) {}
+  }
+);
+
+blogPostsRouterDB
+  .route("/:postId/comments", JWTAuthMiddleware)
+  .get(comments.getComments)
+  .post(comments.createComments);
+
+blogPostsRouterDB
+  .route("/:postId/comments/:commentId")
+  .get(JWTAuthMiddleware, comments.getCommentsById)
+  .put(JWTAuthMiddleware, comments.updateCommentsById)
+  .delete(JWTAuthMiddleware, comments.deleteCommentsById);
 
 export default blogPostsRouterDB;
