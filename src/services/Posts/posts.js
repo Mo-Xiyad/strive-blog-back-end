@@ -3,20 +3,23 @@ import PostModel from "../../db/postSchema.js";
 import createHttpError from "http-errors";
 import q2m from "query-to-mongo";
 import mongoose from "mongoose";
-import path from "path";
-import fs from "fs-extra";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { v2 as cloudinary } from "cloudinary";
 
 import { pipeline } from "stream";
-import { createGzip } from "zlib";
 import json2csv from "json2csv";
+
+import { createGzip } from "zlib";
 import { getPDFReadableStream, generatePDFAsync } from "../../lib/pdf-tools.js";
 import { sendNewPostEmail } from "../../lib/email-tools.js";
+import { validationResult } from "express-validator";
+import path from "path";
+import fs from "fs-extra";
 
 import multer from "multer";
 
-import { validationResult } from "express-validator";
+import { JWTAuthMiddleware } from "../../auth/jwt-Tokens.js";
+import { adminOnlyMiddleware } from "../../auth/admin.js";
 import { basicAuthMiddleware } from "../../auth/user.js";
 const blogPostsRouterDB = express.Router();
 /*
@@ -27,30 +30,34 @@ q2m translates something like /books?limit=5&sort=-price&offset=15&price<10&cate
 }
 */
 // ***************  DOWNLOAD CSV  ***************
-blogPostsRouterDB.get("/downloadCSV-authos", async (req, res, next) => {
-  try {
-    res.setHeader("Content-Disposition", "attachment; filename=authors.csv");
+blogPostsRouterDB.get(
+  "/downloadCSV-authos",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      res.setHeader("Content-Disposition", "attachment; filename=authors.csv");
 
-    const mongoQuery = q2m(req.query);
-    const post = await PostModel.find(mongoQuery.criteria);
+      const mongoQuery = q2m(req.query);
+      const post = await PostModel.find(mongoQuery.criteria);
 
-    const transform = new json2csv.Transform({
-      fields: ["author.name", "author.avatar", "author.email"],
-    });
+      const transform = new json2csv.Transform({
+        fields: ["author.name", "author.avatar", "author.email"],
+      });
 
-    const destination = res;
+      const destination = res;
 
-    pipeline(post, transform, destination, (err) => {
-      if (err) next(err);
-      console.log(err);
-    });
-  } catch (error) {
-    console.log(error);
-    next(error);
+      pipeline(post, transform, destination, (err) => {
+        if (err) next(err);
+        console.log(err);
+      });
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
   }
-});
+);
 
-blogPostsRouterDB.get("/", basicAuthMiddleware, async (req, res, next) => {
+blogPostsRouterDB.get("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     // {{local}}/posts?limit=2&offset=2 URL
     const mongoQuery = q2m(req.query);
@@ -89,7 +96,7 @@ blogPostsRouterDB.get("/", basicAuthMiddleware, async (req, res, next) => {
   }
 });
 
-blogPostsRouterDB.post("/", async (req, res, next) => {
+blogPostsRouterDB.post("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const newPost = new PostModel(req.body); // here happens validation of req.body, if it is not ok Mongoose will throw a "ValidationError" (btw user is still not saved in db yet)
     const { _id } = await newPost.save(); // this is the line in which the interaction with the db happens
@@ -101,7 +108,7 @@ blogPostsRouterDB.post("/", async (req, res, next) => {
   }
 });
 
-const getpostsById = async (req, res, next) => {
+blogPostsRouterDB.get("/:postId", async (req, res, next) => {
   try {
     const id = req.params.postId;
     const post = await PostModel.findById(id, {
@@ -118,9 +125,9 @@ const getpostsById = async (req, res, next) => {
     console.log(error);
     next(error);
   }
-};
+});
 
-const updatePostsById = async (req, res, next) => {
+blogPostsRouterDB.put("/:postId", async (req, res, next) => {
   try {
     const id = req.params.postId;
     const updatePost = await PostModel.findByIdAndUpdate(id, req.body, {
@@ -136,9 +143,9 @@ const updatePostsById = async (req, res, next) => {
     console.log(error);
     next(error);
   }
-};
+});
 
-const deletePostsById = async (req, res, next) => {
+blogPostsRouterDB.delete("/:postId", async (req, res, next) => {
   try {
     const id = req.params.postId;
     const deletePost = await PostModel.findByIdAndDelete(id);
@@ -151,29 +158,40 @@ const deletePostsById = async (req, res, next) => {
     console.log(error);
     next(error);
   }
-};
+});
 
 // upload image
-const uploadImage = async (req, res, next) => {
-  try {
-    const imgUrl = req.file.path;
-    console.log(req.file);
-    const id = req.params.postId;
-    const updatePost = await PostModel.findByIdAndUpdate(
-      id,
-      { $set: { cover: imgUrl } },
-      {
-        new: true,
-      }
-    );
-    res.send(updatePost);
-  } catch (error) {
-    console.log(error);
-    next(error);
+// POST PICTURS
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary, // CREDENTIALS, this line of code is going to search in your process.env for something called CLOUDINARY_URL
+  params: {
+    folder: "strive-blog",
+  },
+});
+blogPostsRouterDB.put(
+  "/:postId/uploadImage",
+  multer({ storage: cloudinaryStorage }).single("cover"),
+  async (req, res, next) => {
+    try {
+      const imgUrl = req.file.path;
+      console.log(req.file);
+      const id = req.params.postId;
+      const updatePost = await PostModel.findByIdAndUpdate(
+        id,
+        { $set: { cover: imgUrl } },
+        {
+          new: true,
+        }
+      );
+      res.send(updatePost);
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
   }
-};
+);
 
-const likePost = async (req, res, next) => {
+blogPostsRouterDB.put("/:postId/likes", async (req, res, next) => {
   try {
     const id = req.params.postId;
     const post = await PostModel.findById(id);
@@ -200,6 +218,6 @@ const likePost = async (req, res, next) => {
     }
     res.send(post);
   } catch (error) {}
-};
+});
 
 export default blogPostsRouterDB;

@@ -61,7 +61,10 @@ usersRouterDB.get("/me", JWTAuthMiddleware, async (req, res, next) => {
 
 usersRouterDB.get(
   "/googleLogin",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  })
 ); // This endpoint receives Google Login requests from our FE, and it is going to redirect them to Google Consent Screen
 
 usersRouterDB.get(
