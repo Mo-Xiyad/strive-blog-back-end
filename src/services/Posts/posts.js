@@ -70,7 +70,8 @@ blogPostsRouterDB.get("/", JWTAuthMiddleware, async (req, res, next) => {
       .limit(mongoQuery.options.limit)
       .skip(mongoQuery.options.skip)
       .sort(mongoQuery.options.sort)
-      .populate({ path: "author", select: "firstName lastName" });
+      .populate({ path: "author", select: "avatar name" });
+    // .populate({ path: "author", select: "firstName lastName" });
     // populate "path" should be same the FIELD that is in the referenced model
     if (post) {
       res.send({
@@ -117,7 +118,7 @@ blogPostsRouterDB.get("/:postId", JWTAuthMiddleware, async (req, res, next) => {
       createdAt: 0,
       updatedAt: 0,
       __v: 0,
-    });
+    }).populate("author");
     if (post) {
       res.send(post);
     } else {

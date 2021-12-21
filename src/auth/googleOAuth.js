@@ -32,6 +32,7 @@ const googleCloudStrategy = new GoogleStrategy(
           name: profile.name.givenName,
           surname: profile.name.familyName,
           email: profile.emails[0].value,
+          avatar: profile.photos[0].value,
           googleId: profile.id,
         });
 
