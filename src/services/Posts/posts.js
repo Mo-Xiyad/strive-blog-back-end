@@ -174,6 +174,7 @@ const cloudinaryStorage = new CloudinaryStorage({
     folder: "strive-blog",
   },
 });
+
 blogPostsRouterDB.put(
   "/:postId/uploadImage",
   multer({ storage: cloudinaryStorage }).single("cover"),
@@ -182,6 +183,7 @@ blogPostsRouterDB.put(
     try {
       const imgUrl = req.file.path;
       console.log(req.file);
+      console.log(req);
       const id = req.params.postId;
       const updatePost = await PostModel.findByIdAndUpdate(
         id,
@@ -190,7 +192,12 @@ blogPostsRouterDB.put(
           new: true,
         }
       );
-      res.send(updatePost);
+      if (updatePost) {
+        res.status(200).send(updatePost);
+      } else {
+        console.log(res);
+      }
+      console.log(updatePost);
     } catch (error) {
       console.log(error);
       next(error);

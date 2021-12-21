@@ -36,10 +36,6 @@ const getComments = async (req, res, next) => {
       const newComments = postComments.find((c) => c._id.toString() === id);
 
       res.send({ newComments });
-
-      // res.send({
-      //   comments: post.comments,
-      // });
     } else {
       next(
         createHttpError(404, `Post with id ${req.params.postId} not found!`)

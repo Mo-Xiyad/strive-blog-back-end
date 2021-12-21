@@ -17,7 +17,7 @@ const postSchema = new Schema(
     cover: { type: String },
     readTime: {
       type: Object,
-      required: true,
+      required: false,
       nested: {
         value: {
           type: Number,

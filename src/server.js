@@ -63,10 +63,12 @@ server.use(passport.initialize());
 
 const staticFolderPath = join(process.cwd(), "./public");
 server.use(express.static(staticFolderPath));
-server.use("/users", usersRouter);
-server.use("/usersFromDb", usersRouterDB);
-server.use("/posts", blogPostsRouter);
-server.use("/postsFromDb", blogPostsRouterDB);
+// server.use("/users", usersRouter); //normal routes for json
+// server.use("/usersFromDb", usersRouterDB);
+server.use("/users", usersRouterDB);
+// server.use("/posts", blogPostsRouter); //normal routes for json
+// server.use("/postsFromDb", blogPostsRouterDB);
+server.use("/posts", blogPostsRouterDB);
 server.use("/docsAPI", swaggerUI.serve, swaggerUI.setup(yamlAPIDocument));
 
 // ************************ END **********************

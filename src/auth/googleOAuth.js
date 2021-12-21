@@ -7,7 +7,7 @@ const googleCloudStrategy = new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_OAUTH_ID,
     clientSecret: process.env.GOOGLE_OAUTH_SECRET,
-    callbackURL: `${process.env.API_URL}/usersFromDb/googleRedirect`,
+    callbackURL: `${process.env.API_URL}/users/googleRedirect`,
     // authorizationParams: { approval_prompt: "force", access_type: "offline" },
   },
   async (accessToken, refreshToken, profile, passportNext) => {
